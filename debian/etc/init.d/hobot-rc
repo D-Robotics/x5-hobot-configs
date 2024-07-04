@@ -1,0 +1,103 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          hobot
+# Required-Start:    $all
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Custom self-starter
+### END INIT INFO
+
+change_grp()
+{
+	local DIR="${1}"
+	local group_name="${2}"
+
+	for file in $(find "$DIR" -depth)
+	do
+		if [ -d "$file" ] || [ -f "$file" ]; then
+			group=$(stat -c %G "$file")
+			if [ "$group" == "root" ] || [ "$group" == "sudo" ]; then
+				chgrp ${group_name} "$file"
+			fi
+		fi
+	done
+}
+
+mount_config()
+{
+	# Determine the mmc device number of the rootfs partition
+	local ROOT_PART="$(findmnt / -o source -n)"
+	local ROOT_DEV="/dev/$(lsblk -no pkname "$ROOT_PART")"
+
+	# Find the config partition
+	local config_dev=$(blkid ${ROOT_DEV}* | grep 'LABEL="CONFIG"' | cut -d: -f1)
+	if [ -z "$config_dev" ]; then
+		echo "Error: could not find config partition with label CONFIG"
+		return 1
+	fi
+
+	# Mount the config partition to /boot/config
+	local config_mount="/boot/config"
+	mkdir -p $config_mount
+	mount $config_dev $config_mount
+
+	echo "Mounted config partition $config_dev to $config_mount"
+}
+
+start()
+{
+	which "hrut_count" >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		hrut_count 0
+	fi
+
+	chmod a=rx,u+ws /usr/bin/sudo
+
+	if [ -d /home/sunrise ]; then
+		chown sunrise:sunrise -R /home/sunrise
+	fi
+
+	chmod 775 /app
+	if [ -d /app ]; then
+		change_grp /app video
+	fi
+
+	if [ -d /var/cache/man ]; then
+		chown man:man -R /var/cache/man
+	fi
+
+	# for ubuntu desktop
+	[[ -d /etc/lightdm ]] && echo desktop > /sys/devices/virtual/graphics/iar_cdev/iar_test_attr
+
+	python_path="/usr/bin/python3.8"
+	desired_caps="cap_sys_rawio,cap_sys_nice+eip"
+	if getcap "$python_path" | grep -q "$desired_caps"; then
+		setcap -r "$python_path"
+	fi
+
+	mount_config
+
+	if [ -e "/boot/config/hobot_config.sh" ]; then
+		chmod +x /boot/config/hobot_config.sh
+		/boot/config/hobot_config.sh
+	fi
+
+	if [ -e "/usr/bin/hobot_reset_camera.py" ]; then
+		chmod +x /usr/bin/hobot_reset_camera.py
+		python3 /usr/bin/hobot_reset_camera.py
+	fi
+}
+
+case "$1" in
+	start)
+		start
+		exit 0
+		;;
+	*)
+		echo "Usage: $0 start"
+		exit 0
+		;;
+esac
+

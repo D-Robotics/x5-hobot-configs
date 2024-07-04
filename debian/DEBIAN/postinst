@@ -1,0 +1,46 @@
+#!/bin/bash
+
+update-rc.d usbsel defaults
+update-rc.d hobot-rc defaults
+
+systemctl --no-reload enable hobot-rc.service
+systemctl --no-reload enable usbsel.service
+systemctl --no-reload enable hobot-resizefs.service
+systemctl --no-reload enable hobot-firstrun.service
+systemctl --no-reload enable hobot-set_led_status
+systemctl --no-reload enable serial-getty@ttyS0.service
+systemctl --no-reload enable hobot-cpu-config.service
+systemctl --no-reload enable hobot-automount.service
+
+if [ ! -f /etc/rc.local ]; then
+	cp /etc/rc.local.default /etc/rc.local
+fi
+
+if [ -e /etc/network/interfaces ]; then
+	if ! grep -q "iface eth0" /etc/network/interfaces; then
+		cp /etc/network/hobot-eth0.default /etc/network/interfaces
+	fi
+else
+	cp /etc/network/hobot-eth0.default /etc/network/interfaces
+fi
+
+chmod 777 /etc/set_mac_address.sh
+mkdir -p /home/root
+
+ununtu_version=$(cat /etc/issue.net | awk -F" " '{print $2}' | awk -F"." '{print $1}')
+if [ "$ununtu_version" -ge "22" ]; then
+
+cat>>etc/bash.bashrc<<EOF
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+EOF
+
+fi
+
+exit 0
+
