@@ -24,6 +24,14 @@ if [ ! -f /etc/lightdm/lightdm.conf.d/22-hobot-autologin.conf ]; then
 	cp /etc/lightdm/lightdm.conf.d/22-hobot-autologin.conf.default /etc/lightdm/lightdm.conf.d/22-hobot-autologin.conf
 fi
 
+if [ -f /etc/X11/xorg.conf.d/xorg_hdmi_ignore.conf ]; then
+	rm /etc/X11/xorg.conf.d/xorg_hdmi_ignore.conf.disable
+fi
+
+if [ -f /etc/X11/xorg.conf.d/xorg_dsi_ignore.conf.disable ]; then
+	rm /etc/X11/xorg.conf.d/xorg_dsi_ignore.conf
+fi
+
 if [ -e /etc/network/interfaces ]; then
 	if ! grep -q "iface eth0" /etc/network/interfaces; then
 		cp /etc/network/hobot-eth0.default /etc/network/interfaces
