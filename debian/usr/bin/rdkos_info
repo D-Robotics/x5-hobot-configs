@@ -36,7 +36,7 @@ get_rdk_os_info() {
     echo "[RDK Kernel Version]:"
     echo -e "\t${kernel_info}\n"
 
-    miniboot_info=$(strings /dev/mtd0 | grep -E "U-Boot 2018.09.*\(" | head -n 1)
+    miniboot_info=$(strings /dev/mtd0 | grep -E "U-Boot 2022.10.*\(" | head -n 1)
     echo "[RDK Miniboot Version]:"
     echo -e "\t${miniboot_info}\n"
 
