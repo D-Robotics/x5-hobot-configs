@@ -11,6 +11,7 @@ systemctl --no-reload enable hobot-set_led_status
 systemctl --no-reload enable serial-getty@ttyS0.service
 systemctl --no-reload enable hobot-cpu-config.service
 systemctl --no-reload enable hobot-automount.service
+systemctl --no-reload enable init_S98qos_config.service
 
 if [ ! -f /etc/rc.local ]; then
 	cp /etc/rc.local.default /etc/rc.local
