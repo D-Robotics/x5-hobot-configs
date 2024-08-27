@@ -23,11 +23,11 @@ get_hardware_info() {
         ion_cma_size_dec=$((16#${ion_cma_size_hex}))
         ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
         echo -e "[ION Memory Size]:\t${ion_cma_size_mb}MB"
-        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_reserved@940C0000/size | tr -d " \t\n\r")
+        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_reserved@*/size | tr -d " \t\n\r")
         ion_cma_size_dec=$((16#${ion_cma_size_hex}))
         ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
         echo -e "[ION Reserved Memory Size]:\t${ion_cma_size_mb}MB"
-        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_carveout@B40C0000/size | tr -d " \t\n\r")
+        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_carveout@*/size | tr -d " \t\n\r")
         ion_cma_size_dec=$((16#${ion_cma_size_hex}))
         ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
         echo -e "[ION Carveout Memory Size]:\t${ion_cma_size_mb}MB"
