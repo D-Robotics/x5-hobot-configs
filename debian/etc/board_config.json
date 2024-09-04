@@ -1,5 +1,28 @@
 {
   "version": "3.0.0",
+  "board_202": {
+    "board_id": "202",
+    "camera_num": 3,
+    "cameras": [
+      {
+        "i2c_bus": 4,
+        "mipi_host": 0
+      },
+      {
+        "i2c_bus": 2,
+        "mipi_host": 2
+      },
+      {
+        "i2c_bus": 7,
+        "mipi_host": 3
+      },
+      {
+        "i2c_bus": 1,
+        "mipi_host": 1,
+	"Note": "Requires CSI expansion board"
+      }
+    ]
+  },
   "board_301": {
     "board_id": "301",
     "camera_num": 2,
