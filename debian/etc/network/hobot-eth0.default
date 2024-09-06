@@ -8,3 +8,10 @@ iface eth0 inet static
         netmask 255.255.255.0
         gateway 192.168.127.1
         metric 700
+
+auto usb0
+iface usb0 inet static
+        address 192.168.128.10
+        netmask 255.255.255.0
+        gateway 192.168.128.1
+        metric 800

@@ -37,6 +37,9 @@ if [ -e /etc/network/interfaces ]; then
 	if ! grep -q "iface eth0" /etc/network/interfaces; then
 		cp /etc/network/hobot-eth0.default /etc/network/interfaces
 	fi
+	if ! grep -q "iface usb0" /etc/network/interfaces; then
+		cp /etc/network/hobot-eth0.default /etc/network/interfaces
+	fi
 else
 	cp /etc/network/hobot-eth0.default /etc/network/interfaces
 fi
