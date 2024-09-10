@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Update package list
+sudo apt update
+
+# Find and list installed packages that start with "hobot-" or "tros-"
+packages=$(apt list --installed 2>/dev/null | grep -E '^(hobot-|tros-)' | cut -d/ -f1)
+
+# Check if any packages are found
+if [ -z "$packages" ]; then
+	echo "No packages starting with 'hobot-' or 'tros-' were found."
+else
+	echo "The following packages will be upgraded: $packages"
+
+	# Upgrade only the found packages
+	sudo apt install --only-upgrade $packages
+fi
+
