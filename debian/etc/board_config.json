@@ -36,5 +36,19 @@
         "mipi_host": 2
       }
     ]
+  },
+  "board_302": {
+    "board_id": "302",
+    "camera_num": 2,
+    "cameras": [
+      {
+        "i2c_bus": 6,
+        "mipi_host": 0
+      },
+      {
+        "i2c_bus": 4,
+        "mipi_host": 2
+      }
+    ]
   }
 }
