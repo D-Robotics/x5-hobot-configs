@@ -64,6 +64,8 @@ EOF
 
 fi
 
+mv /lib/systemd/system/hobot-networking.service /lib/systemd/system/networking.service
+
 cp -arf /etc/skel/.config /home/root
 cp -arf /etc/skel/.config /home/sunrise
 
