@@ -15,7 +15,7 @@ WantedBy=network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=-/etc/default/networking
-ExecStart=/bin/bash -c '/usr/bin/rm /run/network/ifstate.eth0 && /sbin/ifup -a --read-environment'
-ExecStop=/bin/bash -c '/usr/bin/rm /run/network/ifstate.eth0 &&/sbin/ifdown -a --read-environment --exclude=lo'
+ExecStart=/bin/bash -c '/usr/bin/rm -f /run/network/ifstate.eth0 && /sbin/ifup -a --read-environment'
+ExecStop=/bin/bash -c '/usr/bin/rm -f /run/network/ifstate.eth0 &&/sbin/ifdown -a --read-environment --exclude=lo'
 RemainAfterExit=true
 TimeoutStartSec=2sec
