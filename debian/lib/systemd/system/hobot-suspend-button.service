@@ -1,0 +1,14 @@
+# Hobot suspend service
+
+[Unit]
+Description=Suspend button
+After=getty.target system-getty.slice
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/suspend-button
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
