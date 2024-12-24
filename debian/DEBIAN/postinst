@@ -64,6 +64,10 @@ fi
 EOF
 
 fi
+if [ -f /etc/default/unclutter ]; then
+	sed 's/true/false/g' /etc/default/unclutter > /tmp/unclutter
+	mv /tmp/unclutter /etc/default/unclutter
+fi
 
 mv /lib/systemd/system/hobot-networking.service /lib/systemd/system/networking.service
 

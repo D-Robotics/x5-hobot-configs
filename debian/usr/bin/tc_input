@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# 按压和释放时间的间隔（单位：纳秒）
+PRESS_THRESHOLD=300000000  # 300 毫秒
+# 双击的时间间隔（单位：纳秒）
+DOUBLE_CLICK_THRESHOLD=500000000  # 500 毫秒
+# 触摸屏输入设备编号
+tc_device=7
+
+last_press_time=0
+last_click_diff=0
+is_double_click=0
+
+xinput test $tc_device | while read -r line; do
+    if [[ "$line" == *"button press"* ]]; then
+        press_time=$(date +%s%N)
+
+        if [[ $last_press_time -ne 0 ]]; then
+            click_diff=$((press_time - last_press_time))
+            
+            if [[ $click_diff -lt $DOUBLE_CLICK_THRESHOLD ]]; then
+                xdotool click --repeat 2 1
+                is_double_click=1
+            fi
+        fi
+        last_press_time=$press_time
+
+    elif [[ "$line" == *"button release"* ]]; then
+        release_time=$(date +%s%N)
+        time_diff=$((release_time - press_time))
+
+        if [[ $time_diff -gt $PRESS_THRESHOLD ]]; then
+            xdotool click 3
+        fi
+    fi
+done
