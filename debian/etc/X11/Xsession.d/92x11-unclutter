@@ -1,0 +1,10 @@
+# This file is sourced by Xsession(5), not executed.
+UNCLUTTER_START="false"
+
+# Options passed to unclutter, see 'man unclutter' for details.
+UNCLUTTER_EXTRA_OPTS="-idle 1 -root"
+
+if [ -x /usr/bin/unclutter ] && [ "${UNCLUTTER_START}" = "true" ]
+then
+	/usr/bin/unclutter ${UNCLUTTER_EXTRA_OPTS} &
+fi
