@@ -10,9 +10,20 @@ tc_device=7
 last_press_time=0
 last_click_diff=0
 is_double_click=0
+is_dragging=0
+press_current_x=0
+press_current_y=0
+release_current_x=0
+release_current_y=0
 
 xinput test $tc_device | while read -r line; do
     if [[ "$line" == *"button press"* ]]; then
+
+        if [[ $line =~ a\[0\]=([0-9]+)\ a\[1\]=([0-9]+) ]]; then
+            press_current_x=${BASH_REMATCH[1]}
+            press_current_y=${BASH_REMATCH[2]}
+        fi
+
         press_time=$(date +%s%N)
 
         if [[ $last_press_time -ne 0 ]]; then
@@ -26,10 +37,16 @@ xinput test $tc_device | while read -r line; do
         last_press_time=$press_time
 
     elif [[ "$line" == *"button release"* ]]; then
+
+        if [[ $line =~ a\[0\]=([0-9]+)\ a\[1\]=([0-9]+) ]]; then
+            release_current_x=${BASH_REMATCH[1]}
+            release_current_y=${BASH_REMATCH[2]}
+        fi  
+
         release_time=$(date +%s%N)
         time_diff=$((release_time - press_time))
 
-        if [[ $time_diff -gt $PRESS_THRESHOLD ]]; then
+        if [[ $press_current_x -eq $release_current_x && $press_current_y -eq $release_current_y && $time_diff -gt $PRESS_THRESHOLD ]]; then
             xdotool click 3
         fi
     fi
