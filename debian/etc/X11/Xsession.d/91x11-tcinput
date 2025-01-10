@@ -1,0 +1,6 @@
+# tc_input
+
+if [ -x /usr/bin/tc_input ]
+then
+        /usr/bin/tc_input &
+fi
