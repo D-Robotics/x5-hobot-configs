@@ -3,7 +3,8 @@ Description=Start x11vnc at startup.
 After=multi-user.target 
  
 [Service] 
-Type=simple 
+Type=simple
+ExecStartPre=/bin/bash -c 'if [ "$(cat /sys/class/drm/card0-HDMI-A-1/status)" != "connected" ]; then echo "on" > /sys/class/drm/card0-HDMI-A-1/status; fi' 
 ExecStart=/usr/bin/x11vnc -auth guess -forever -loop -capslock -nomodtweak -noxdamage -repeat -rfbauth /etc/.vnc/passwd -rfbport 5900 -shared 
  
 [Install] 
