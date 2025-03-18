@@ -17,5 +17,6 @@ Type=oneshot
 EnvironmentFile=-/etc/default/networking
 ExecStart=/bin/bash -c '/usr/bin/rm -f /run/network/ifstate.eth0 && /sbin/ifup -a --read-environment'
 ExecStop=/bin/bash -c '/usr/bin/rm -f /run/network/ifstate.eth0 &&/sbin/ifdown -a --read-environment --exclude=lo'
+SuccessExitStatus=1 2 3 4
 RemainAfterExit=true
 TimeoutStartSec=2sec
