@@ -18,31 +18,22 @@ get_hardware_info() {
     echo -e "[Used Memory]:\t\t${used_memory}"
     echo -e "[Free Memory]:\t\t${free_memory}"
 
-    if [ -e /proc/device-tree/reserved-memory/ion_cma/size ] ; then
-        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_cma/size | tr -d " \t\n\r")
-        ion_cma_size_dec=$((16#${ion_cma_size_hex}))
-        ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
-        echo -e "[ION Memory Size]:\t${ion_cma_size_mb}MB"
+    if [ -e /sys/kernel/debug/ion/heaps/ion_cma ] ; then
+    ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/ion_cma")
+    ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
+    echo -e "[ION Memory Size]:\t${ion_cma_size_mb}MB"
     fi
 
-    if [ -e /proc/device-tree/reserved-memory/ion_reserved@*/size ] ; then
-        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_reserved@*/size | tr -d " \t\n\r")
-        ion_cma_size_dec=$((16#${ion_cma_size_hex}))
-        ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
-        echo -e "[ION Reserved Memory Size]:\t${ion_cma_size_mb}MB"
-        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_carveout@*/size | tr -d " \t\n\r")
-        ion_cma_size_dec=$((16#${ion_cma_size_hex}))
-        ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
-        echo -e "[ION Carveout Memory Size]:\t${ion_cma_size_mb}MB"
-    else
-        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_reserved/size | tr -d " \t\n\r")
-        ion_cma_size_dec=$((16#${ion_cma_size_hex}))
-        ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
-        echo -e "[ION Reserved Memory Size]:\t${ion_cma_size_mb}MB"
-        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_carveout/size | tr -d " \t\n\r")
-        ion_cma_size_dec=$((16#${ion_cma_size_hex}))
-        ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
-        echo -e "[ION Carveout Memory Size]:\t${ion_cma_size_mb}MB"
+    if [ -e /sys/kernel/debug/ion/heaps/cma_reserved ] ; then
+    ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/cma_reserved")
+    ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
+    echo -e "[ION Reserved Memory Size]:\t${ion_cma_size_mb}MB"
+    fi
+
+    if [ -e /sys/kernel/debug/ion/heaps/carveout ] ; then
+    ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/carveout")
+    ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
+    echo -e "[ION Carveout Memory Size]:\t${ion_cma_size_mb}MB"
     fi
     echo -e "\n"
 }
