@@ -67,6 +67,10 @@ fi
 
 mv /lib/systemd/system/hobot-networking.service /lib/systemd/system/networking.service
 
+#Xorg use /usr/hobot/lib gc8000l library
+sed -i '/^export LD_LIBRARY_PATH=\/usr\/hobot\/lib:\$LD_LIBRARY_PATH$/d' /usr/bin/Xorg && \
+sed -i '/^basedir=\/usr\/lib\/xorg/i export LD_LIBRARY_PATH=/usr/hobot/lib:$LD_LIBRARY_PATH' /usr/bin/Xorg
+
 cp -arf /etc/skel/.config /home/root
 cp -arf /etc/skel/.config /home/sunrise
 

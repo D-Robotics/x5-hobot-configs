@@ -1,0 +1,3 @@
+# vblank_mode -s off
+
+xfconf-query -c xfwm4 -p /general/vblank_mode -s off
