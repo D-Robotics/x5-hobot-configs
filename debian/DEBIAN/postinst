@@ -14,6 +14,8 @@ systemctl --no-reload enable hobot-automount.service
 systemctl --no-reload enable init_S98qos_config.service
 systemctl --no-reload enable hobot-suspend-button.service
 
+update-alternatives --set iptables /usr/sbin/iptables-legacy
+
 if [ ! -f /etc/rc.local ]; then
 	cp /etc/rc.local.default /etc/rc.local
 fi
