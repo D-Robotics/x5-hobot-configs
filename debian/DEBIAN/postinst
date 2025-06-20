@@ -13,6 +13,7 @@ systemctl --no-reload enable hobot-cpu-config.service
 systemctl --no-reload enable hobot-automount.service
 systemctl --no-reload enable init_S98qos_config.service
 systemctl --no-reload enable hobot-suspend-button.service
+systemctl --no-reload enable hobot-switch-aptsource.service
 
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
