@@ -1,11 +1,14 @@
 [Unit]
 Description=Auto Switch APT Source After Network Online
 Wants=network-online.target
-After=network-online.target
+After=network-online.target multi-user.target NetworkManager-wait-online.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/switch_apt_source.sh
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
 
 [Install]
 WantedBy=multi-user.target
