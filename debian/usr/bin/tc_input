@@ -4,8 +4,6 @@
 PRESS_THRESHOLD=300000000  # 300 毫秒
 # 双击的时间间隔（单位：纳秒）
 DOUBLE_CLICK_THRESHOLD=500000000  # 500 毫秒
-# 触摸屏输入设备编号
-tc_device=7
 
 last_press_time=0
 last_click_diff=0
@@ -15,6 +13,23 @@ press_current_x=0
 press_current_y=0
 release_current_x=0
 release_current_y=0
+
+# 检查触摸设备函数
+get_touch_id() {
+    xinput list | grep -iE 'touch|waveshare' | grep -v 'Mouse' \
+    | sed -n 's/.*id=\([0-9]\+\).*/\1/p' | awk '$1 > 6' | head -n 1
+}
+
+# 等待直到触摸设备出现
+while true; do
+    tc_device=$(get_touch_id)
+    if [[ -n "$tc_device" ]]; then
+        echo "Found touch device id: $tc_device"
+        break
+    fi
+    #echo "Waiting for touch device..."
+    sleep 5
+done
 
 xinput test $tc_device | while read -r line; do
     if [[ "$line" == *"button press"* ]]; then
