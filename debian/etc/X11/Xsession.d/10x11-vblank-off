@@ -1,3 +1,5 @@
 # vblank_mode -s off
 
-xfconf-query -c xfwm4 -p /general/vblank_mode -s off
+if [ -e /etc/X11/xorg.conf.d/2-dr-accel.conf ] ; then
+	xfconf-query -c xfwm4 -p /general/vblank_mode -s off
+fi
