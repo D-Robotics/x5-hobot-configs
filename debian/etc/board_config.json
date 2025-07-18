@@ -86,5 +86,17 @@
         "mipi_host": 2
       }
     ]
+  },
+  "board_505": {
+    "board_id": "505",
+    "camera_num": 2,
+    "cameras": [
+      {
+        "mipi_host": 0
+      },
+      {
+        "mipi_host": 2
+      }
+    ]
   }
 }
