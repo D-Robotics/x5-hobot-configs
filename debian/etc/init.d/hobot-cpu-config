@@ -14,6 +14,8 @@ start()
     arm_boost=$(grep -E "^arm_boost=" /boot/config.txt | cut -d'=' -f2)
     governor=$(grep -E "^governor=" /boot/config.txt | cut -d'=' -f2)
     frequency=$(grep -E "^frequency=" /boot/config.txt | cut -d'=' -f2)
+    throttling_temp=$(grep -E "^throttling_temp=" /boot/config.txt | cut -d'=' -f2)
+    shutdown_temp=$(grep -E "^shutdown_temp=" /boot/config.txt | cut -d'=' -f2)
 
     if [ -n "$arm_boost" ]; then
         echo "Enabling CPU overclocking..."
@@ -51,6 +53,20 @@ start()
                 fi
             fi
         fi
+    fi
+
+    if [ -n "$throttling_temp" ]; then
+        echo "Setting DDR/CPU/BPU/GPU throttling temp to $throttling_temp..."
+        echo user_space > /sys/class/thermal/thermal_zone0/policy
+        echo "$throttling_temp" > /sys/devices/virtual/thermal/thermal_zone0/trip_point_0_temp
+        echo user_space > /sys/class/thermal/thermal_zone1/policy
+        echo "$throttling_temp" > /sys/devices/virtual/thermal/thermal_zone1/trip_point_1_temp
+    fi
+
+    if [ -n "$shutdown_temp" ]; then
+        echo "Setting CPU/BPU/GPU shutdown temp to $shutdown_temp..."
+        echo user_space > /sys/class/thermal/thermal_zone1/policy
+        echo "$shutdown_temp" > /sys/devices/virtual/thermal/thermal_zone1/trip_point_2_temp
     fi
 
     echo "CPU configuration complete."
