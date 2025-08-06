@@ -1,9 +1,7 @@
 #!/bin/bash
 
-update-rc.d usbsel remove
 update-rc.d hobot-rc remove
 
-systemctl disable usbsel.service
 systemctl disable hobot-rc.service
 
 exit 0
