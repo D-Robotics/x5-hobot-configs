@@ -1,4 +1,4 @@
-// Copyright (c) 2024，D-Robotics.
+// Copyright (c) 2024, D-Robotics.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/input.h>
-#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
 
 int main() {
     int fd;
-    int count=0;
+    int count = 0;
     struct input_event ie;
 
     fd = open("/dev/input/event0", O_RDONLY);
@@ -34,14 +36,20 @@ int main() {
         ssize_t bytes = read(fd, &ie, sizeof(struct input_event));
         if (bytes == (ssize_t) sizeof(struct input_event)) {
             if (ie.type == EV_KEY && ie.code == 143) {
-                if (ie.value == 2)
-                {
-                    count=1;
+                if (ie.value == 2) {
+                    count = 1;
                 }
-                if(count == 1 && ie.value == 0)
-                {
+                if (count == 1 && ie.value == 0) {
                     count = 0;
-                    system("/usr/bin/hobot-suspend");
+
+                    pid_t pid = fork();
+                    if (pid == 0) {
+                        execl("/usr/bin/hobot-suspend", "hobot-suspend", NULL);
+                        perror("execl failed");
+                        _exit(EXIT_FAILURE);
+                    } else if (pid < 0) {
+                        perror("fork failed");
+                    }
                 }
             }
         } else {
@@ -49,9 +57,9 @@ int main() {
             close(fd);
             return EXIT_FAILURE;
         }
+        while (waitpid(-1, NULL, WNOHANG) > 0) {}
     }
 
-    // 关闭设备
     close(fd);
     return EXIT_SUCCESS;
 }
