@@ -2,18 +2,12 @@
 
 if [ "$2" = "up" ]; then
 	case "$1" in
-		eth0)
-			GATEWAY=$(ip route show dev eth0 | awk '/default/ {print $3}')
-			MASK=$(echo "$GATEWAY" | awk -F'.' '{ $NF=0; print $1"."$2"."$3"."$NF }')
-			logger "if-up.d: eth0 is up, adjusting default route metric to 700" "$GATEWAY" "$MASK"
+		usb0)
+			ip route del default via 192.168.128.1 dev usb0
+			ip route add default via 192.168.128.1 dev usb0 metric 800
 
-			if [ -n "$GATEWAY" ]; then
-				ip route delete default via "$GATEWAY" dev eth0
-				ip route add default via "$GATEWAY" dev eth0 metric 700 onlink
-
-				ip route delete "$MASK"/24 dev eth0
-				ip route add "$MASK"/24 via 0.0.0.0 dev eth0 metric 700
-			fi
+			ip route del 192.168.128.0/24 via 0.0.0.0 dev usb0
+			ip route add 192.168.128.0/24 via 0.0.0.0 dev usb0 metric 800
 			;;
 		*)
 			;;
