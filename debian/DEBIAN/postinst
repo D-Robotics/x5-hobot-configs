@@ -41,7 +41,11 @@ fi
 
 if [ ! -f /etc/NetworkManager/system-connections/netplan-eth0.nmconnection ]; then
 	chmod 600 /etc/NetworkManager/system-connections/netplan-eth0.nmconnection.default
-	cp /etc/NetworkManager/system-connections/netplan-eth0.nmconnection.default /etc/NetworkManager/system-connections/netplan-eth0.nmconnection
+	mv /etc/NetworkManager/system-connections/netplan-eth0.nmconnection.default /etc/NetworkManager/system-connections/netplan-eth0.nmconnection
+fi
+
+if [ -f /etc/NetworkManager/system-connections/netplan-eth0.nmconnection.default ]; then
+	rm /etc/NetworkManager/system-connections/netplan-eth0.nmconnection.default
 fi
 
 chmod 777 /etc/set_mac_address.sh
