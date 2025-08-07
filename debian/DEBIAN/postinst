@@ -40,6 +40,7 @@ if [ -e /etc/network ]; then
 fi
 
 if [ ! -f /etc/NetworkManager/system-connections/netplan-eth0.nmconnection ]; then
+	chmod 600 /etc/NetworkManager/system-connections/netplan-eth0.nmconnection.default
 	cp /etc/NetworkManager/system-connections/netplan-eth0.nmconnection.default /etc/NetworkManager/system-connections/netplan-eth0.nmconnection
 fi
 
