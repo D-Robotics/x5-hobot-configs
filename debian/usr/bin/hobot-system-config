@@ -1,0 +1,168 @@
+#!/bin/bash
+
+ETH_FILE="/etc/NetworkManager/system-connections//netplan-eth0.nmconnection"
+ETH_REST=0
+
+# 检查配置文件是否存在
+if [ ! -f "/boot/config/rdk-system-config.txt" ]; then
+    echo "Config file not found"
+    exit 0
+fi
+
+# 读取配置
+ethip_type=$(grep -E "^ethip_type=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+ethip_mac=$(grep -E "^ethip_mac=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+
+if [ "$ethip_type" == "static" ]; then
+    ethip_address=$(grep -E "^ethip_address=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+    ethip_netmask=$(grep -E "^ethip_netmask=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+    ethip_gateway=$(grep -E "^ethip_gateway=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+
+    echo "ethip_type=$ethip_type"
+    echo "ethip_address=$ethip_address"
+    echo "ethip_netmask=$ethip_netmask"
+    echo "ethip_gateway=$ethip_gateway"
+
+    if grep -A 10 "^\[ipv4\]" "$ETH_FILE" | grep -q "^address1="; then
+        sed -i "/^\[ipv4\]/,/^\[/ s|^address1=.*|address1=${ethip_address}/${ethip_netmask},${ethip_gateway}|" "$ETH_FILE"
+    else
+        sed -i "/^\[ipv4\]/a address1=${ethip_address}/${ethip_netmask},${ethip_gateway}" "$ETH_FILE"
+    fi
+
+    # 修改 method
+    sed -i "/^\[ipv4\]/,/^\[/ s|^method=.*|method=manual|" "$ETH_FILE"
+
+    ETH_REST=1
+elif [ "$ethip_type" == "dhcp" ]; then
+    echo "ethip_type=$ethip_type"
+    # 清理 address1 行
+    sed -i '/^\[ipv4\]/,/^\[/ {/^\[ipv4\]/!{/^address1=/d}}' "$ETH_FILE"
+    # 修改 method=auto
+    sed -i -E "/^\[ipv4\]/,/^\[/ s|^method=.*|method=auto|" "$ETH_FILE"
+
+    ETH_REST=1
+fi
+
+if [ -n "$ethip_mac" ]; then
+    echo "ethip_mac=$ethip_mac"
+    if grep -A 10 "^\[ethernet\]" "$ETH_FILE" | grep -q "^cloned-mac-address="; then
+        # 已存在，替换
+        sed -i "/^\[ethernet\]/,/^\[/ s|^cloned-mac-address=.*|cloned-mac-address=${ethip_mac}|" "$ETH_FILE"
+    else
+        # 不存在，添加
+        sed -i "/^\[ethernet\]/a cloned-mac-address=${ethip_mac}" "$ETH_FILE"
+    fi
+
+    ETH_REST=1
+fi
+
+wifi_type=$(grep -E "^wifi_type=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+
+if [ "$wifi_type" == "station" ]; then
+    wifi_station_ssid=$(grep -E "^wifi_station_ssid=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+    wifi_station_passwd=$(grep -E "^wifi_station_passwd=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+
+    echo "wifi_type=$wifi_type"
+    echo "wifi_station_ssid=$wifi_station_ssid"
+    echo "wifi_station_passwd=$wifi_station_passwd"
+
+    # 输出文件名为 SSID.nmconnection
+    OUT_FILE="/etc/NetworkManager/system-connections/${wifi_station_ssid}.nmconnection"
+
+    # 生成随机 UUID
+    UUID=$(cat /proc/sys/kernel/random/uuid)
+
+    cat > "$OUT_FILE" <<EOF
+[connection]
+id=$wifi_station_ssid
+uuid=$UUID
+type=wifi
+interface-name=wlan0
+
+[wifi]
+mode=infrastructure
+ssid=$wifi_station_ssid
+
+[wifi-security]
+auth-alg=open
+key-mgmt=wpa-psk
+psk=$wifi_station_passwd
+
+[ipv4]
+method=auto
+
+[ipv6]
+addr-gen-mode=stable-privacy
+method=auto
+
+[proxy]
+EOF
+
+    # 设置权限
+    chmod 600 "$OUT_FILE"
+
+    ETH_REST=1
+
+elif [ "$wifi_type" == "ap" ]; then
+    wifi_ap_ssid=$(grep -E "^wifi_ap_ssid=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+    wifi_ap_passwd=$(grep -E "^wifi_ap_passwd=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+    wifi_ap_band=$(grep -E "^wifi_ap_band=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
+
+    echo "wifi_type=$wifi_type"
+    echo "wifi_ap_ssid=$wifi_ap_ssid"
+    echo "wifi_ap_passwd=$wifi_ap_passwd"
+    echo "wifi_ap_band=$wifi_ap_band"
+
+    # 输出文件名为 SSID.nmconnection
+    OUT_FILE="/etc/NetworkManager/system-connections/${wifi_ap_ssid}.nmconnection"
+
+    # 生成随机 UUID
+    UUID=$(cat /proc/sys/kernel/random/uuid)
+
+    if [ "$wifi_ap_band" = "auto" ]; then
+        WIFI_BAND_LINE=""
+    else
+        WIFI_BAND_LINE="band=$wifi_ap_band"
+    fi
+
+    cat > "$OUT_FILE" <<EOF
+[connection]
+id=$wifi_ap_ssid
+uuid=$UUID
+type=wifi
+
+[wifi]
+$WIFI_BAND_LINE
+mode=ap
+ssid=$wifi_ap_ssid
+
+[wifi-security]
+key-mgmt=wpa-psk
+psk=$wifi_ap_passwd
+
+[ipv4]
+method=shared
+
+[ipv6]
+addr-gen-mode=stable-privacy
+method=shared
+
+[proxy]
+EOF
+
+    # 设置权限
+    chmod 600 "$OUT_FILE"
+
+    ETH_REST=1
+
+fi
+
+if [ "$ETH_REST" == "1" ]; then
+    # 重启网络
+    /usr/bin/restart_network
+fi 
+
+echo "rm -f /boot/config/rdk-system-config.txt"
+rm -f /boot/config/rdk-system-config.txt
+
+exit 0

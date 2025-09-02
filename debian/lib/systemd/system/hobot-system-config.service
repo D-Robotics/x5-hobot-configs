@@ -1,0 +1,11 @@
+[Unit]
+Description=Configure CPU settings from /boot/config/rdk-system-config.txt
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/bin/hobot-system-config
+TimeoutStartSec=1min
+
+[Install]
+WantedBy=multi-user.target
+
