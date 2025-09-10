@@ -44,16 +44,39 @@ elif [ "$ethip_type" == "dhcp" ]; then
 fi
 
 if [ -n "$ethip_mac" ]; then
-    echo "ethip_mac=$ethip_mac"
-    if grep -A 10 "^\[ethernet\]" "$ETH_FILE" | grep -q "^cloned-mac-address="; then
-        # 已存在，替换
-        sed -i "/^\[ethernet\]/,/^\[/ s|^cloned-mac-address=.*|cloned-mac-address=${ethip_mac}|" "$ETH_FILE"
+    # 校验合法性
+    if [[ ! "$ethip_mac" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
+        echo "Invalid MAC address format: $ethip_mac"
+        ethip_mac=""
     else
-        # 不存在，添加
-        sed -i "/^\[ethernet\]/a cloned-mac-address=${ethip_mac}" "$ETH_FILE"
+        # 提取第一个字节
+        first_byte_hex=$(echo "$ethip_mac" | cut -d: -f1)
+        first_byte_dec=$((16#$first_byte_hex))
+
+        # 判断是否组播（最低位 = 1）
+        if (( first_byte_dec & 1 )); then
+            echo "Error: $ethip_mac is a multicast address, not allowed."
+            ethip_mac=""
+        fi
+
+        # 判断是否广播
+        if [ "$ethip_mac" = "FF:FF:FF:FF:FF:FF" ] || [ "$ethip_mac" = "ff:ff:ff:ff:ff:ff" ]; then
+            echo "Error: Broadcast MAC address is not allowed."
+            ethip_mac=""
+        fi
     fi
 
-    ETH_REST=1
+    if [ -n "$ethip_mac" ]; then
+        echo "ethip_mac=$ethip_mac"
+        if grep -A 10 "^\[ethernet\]" "$ETH_FILE" | grep -q "^cloned-mac-address="; then
+            # 已存在，替换
+            sed -i "/^\[ethernet\]/,/^\[/ s|^cloned-mac-address=.*|cloned-mac-address=${ethip_mac}|" "$ETH_FILE"
+        else
+            # 不存在，添加
+            sed -i "/^\[ethernet\]/a cloned-mac-address=${ethip_mac}" "$ETH_FILE"
+        fi
+        ETH_REST=1
+    fi
 fi
 
 wifi_type=$(grep -E "^wifi_type=" /boot/config/rdk-system-config.txt | cut -d'=' -f2 | tr -d '\r' | xargs)
