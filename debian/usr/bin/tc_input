@@ -16,7 +16,7 @@ release_current_y=0
 
 # 检查触摸设备函数
 get_touch_id() {
-    xinput list | grep -iE 'touch|waveshare' | grep -v 'Mouse' \
+    xinput list | grep -iE 'touch|waveshare|fts_ts' | grep -v 'Mouse' \
     | sed -n 's/.*id=\([0-9]\+\).*/\1/p' | awk '$1 > 6' | head -n 1
 }
 
