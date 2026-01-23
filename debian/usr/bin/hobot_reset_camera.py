@@ -49,8 +49,27 @@ def gpio_control(pin, value, active="low"):
 if __name__ == '__main__':
     with open("/sys/class/socinfo/soc_name", 'r') as f:
         soc_name = f.read().strip()
-
+	
     if "x5" in soc_name.lower():
         print("X5 do not need.")
         exit(0)
+
+    with open("/sys/class/socinfo/som_name", 'r') as f:
+        board_id = 'board_' + f.read().strip()
+
+    with open('/etc/board_config.json', 'r') as f:
+        data = json.load(f)
+
+    board_config = data[board_id]
+
+    camera_num = board_config['camera_num']
+    cameras = board_config['cameras']
+
+    for camera in cameras:
+        reset_pin, active_level = camera['reset'].split(':')
+        i2c_bus = camera['i2c_bus']
+        mipi_host = camera['mipi_host']
+        print('Camera reset_pin: {}, active_level: {}, i2c bus: {}, mipi host: {}'.format(reset_pin, active_level, i2c_bus, mipi_host))
+        gpio_control(reset_pin, 0, active_level)
+        gpio_control(reset_pin, 1, active_level)
 

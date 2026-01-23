@@ -1,7 +1,63 @@
 #!/bin/bash
 
+SYSFS_BOARDID_PATH="/sys/class/socinfo/board_id"
+SYSFS_SOCNAME_PATH="/sys/class/socinfo/soc_name"
+SYSFS_SOMNAME_PATH="/sys/class/socinfo/som_name"
+
+get_rdk_type_string() {
+  local soc_name=""
+  local board_id=""
+  local rdk_type="unknown"
+
+  if [ -f "${SYSFS_SOCNAME_PATH}" ]; then
+    soc_name=$(cat "${SYSFS_SOCNAME_PATH}" 2>/dev/null | tr -d '[:space:]')
+  elif [ -f "${SYSFS_SOMNAME_PATH}" ]; then
+    soc_name=$(cat "${SYSFS_SOMNAME_PATH}" 2>/dev/null | tr -d '[:space:]')
+  fi
+  soc_name=${soc_name:-""}
+
+  if [ -f "${SYSFS_BOARDID_PATH}" ]; then
+    board_id=$(cat "${SYSFS_BOARDID_PATH}" 2>/dev/null | tr -d '[:space:]')
+  fi
+  board_id=${board_id:-""}
+
+  if echo "$soc_name" | grep -qi "x5"; then
+    local prefix=""
+    local version_num="0"
+    
+    if [[ "$board_id" == 30* ]]; then
+      prefix="x5_rdk"
+      version_num=$(echo "$board_id" | grep -o "30[0-9]" | grep -o "[0-9]$" || echo "0")
+    elif [[ "$board_id" == 50* ]]; then
+      prefix="x5_md"
+      version_num=$(echo "$board_id" | grep -o "50[0-9]" | grep -o "[0-9]$" || echo "0")
+    fi
+
+    if [ -n "$prefix" ]; then
+      rdk_type="${prefix}_v${version_num}"
+    else
+      rdk_type="x5_unknown"
+    fi
+
+  elif [[ "$soc_name" =~ ^[568b]$ ]]; then
+    case "$soc_name" in
+      "5") rdk_type="x3_rdk_v1"   ;; 
+      "6") rdk_type="x3_rdk_v1_2" ;;  
+      "8") rdk_type="x3_rdk_v2"   ;;
+      "b") rdk_type="x3_md_v1"    ;;
+    esac
+  fi
+
+  echo "$rdk_type"
+}
+
 get_hardware_info() {
-    hardware_info=$(tr -d "\n\r\0" < /proc/device-tree/model)" (Board Id = "$(cat /sys/class/socinfo/board_id)")"
+    board_type_string=$(get_rdk_type_string)
+    if [[ "$board_type_string" == *x5* ]]; then
+      hardware_info="${board_type_string} $(tr -d "\n\r\0" < /sys/class/socinfo/board_version) (Board Id = $(tr -d "\n\r\0" < /sys/class/socinfo/board_id))"
+    else
+      hardware_info=$(tr -d "\n\r\0" < /proc/device-tree/model)" (Board Id = "$(tr -d "\n\r\0" < /sys/class/socinfo/som_name)")"
+    fi
     echo "[Hardware Model]:"
     echo -e "\t${hardware_info}\n"
 
@@ -18,23 +74,33 @@ get_hardware_info() {
     echo -e "[Used Memory]:\t\t${used_memory}"
     echo -e "[Free Memory]:\t\t${free_memory}"
 
-    if [ -e /sys/kernel/debug/ion/heaps/ion_cma ] ; then
-    ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/ion_cma")
-    ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
-    echo -e "[ION Memory Size]:\t${ion_cma_size_mb}MB"
+    if [[ "$board_type_string" == *x5* ]]; then
+      if [ -e /sys/kernel/debug/ion/heaps/ion_cma ] ; then
+      ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/ion_cma")
+      ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
+      echo -e "[ION Memory Size]:\t${ion_cma_size_mb}MB"
+      fi
+
+      if [ -e /sys/kernel/debug/ion/heaps/cma_reserved ] ; then
+      ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/cma_reserved")
+      ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
+      echo -e "[ION Reserved Memory Size]:\t${ion_cma_size_mb}MB"
+      fi
+
+      if [ -e /sys/kernel/debug/ion/heaps/carveout ] ; then
+      ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/carveout")
+      ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
+      echo -e "[ION Carveout Memory Size]:\t${ion_cma_size_mb}MB"
+      fi
+    else
+      if [ -e /proc/device-tree/reserved-memory/ion_cma/size ] ; then
+        ion_cma_size_hex=$(xxd -s 4 -l 4 -p /proc/device-tree/reserved-memory/ion_cma/size | tr -d " \t\n\r")
+        ion_cma_size_dec=$((16#${ion_cma_size_hex}))
+        ion_cma_size_mb=$((ion_cma_size_dec / (1024 * 1024)))
+        echo -e "[ION Memory Size]:\t${ion_cma_size_mb}MB"
+      fi
     fi
 
-    if [ -e /sys/kernel/debug/ion/heaps/cma_reserved ] ; then
-    ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/cma_reserved")
-    ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
-    echo -e "[ION Reserved Memory Size]:\t${ion_cma_size_mb}MB"
-    fi
-
-    if [ -e /sys/kernel/debug/ion/heaps/carveout ] ; then
-    ion_cma_size_hex=$(grep -oP 'heap total size\s+\K\d+' "/sys/kernel/debug/ion/heaps/carveout")
-    ion_cma_size_mb=$((ion_cma_size_hex / 1024 / 1024))
-    echo -e "[ION Carveout Memory Size]:\t${ion_cma_size_mb}MB"
-    fi
     echo -e "\n"
 }
 
@@ -46,8 +112,11 @@ get_rdk_os_info() {
     kernel_info=$(uname -a | tr -d "\0")
     echo "[RDK Kernel Version]:"
     echo -e "\t${kernel_info}\n"
-
-    miniboot_info=$(strings /dev/mtd0 | grep -E "U-Boot 2022.10.*\(" | head -n 1)
+    if [[ "$board_type_string" == *x5* ]]; then
+      miniboot_info=$(strings /dev/mtd0 | grep -E "U-Boot 2022.10.*\(" | head -n 1)
+    else
+      miniboot_info=$(strings /dev/mtd0 | grep -E "U-Boot 2018.09.*\(" | head -n 1)
+    fi
     echo "[RDK Miniboot Version]:"
     echo -e "\t${miniboot_info}\n"
 
