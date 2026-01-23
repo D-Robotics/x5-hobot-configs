@@ -9,11 +9,16 @@ systemctl --no-reload enable hobot-set_led_status
 systemctl --no-reload enable serial-getty@ttyS0.service
 systemctl --no-reload enable hobot-cpu-config.service
 systemctl --no-reload enable hobot-automount.service
+systemctl --no-reload enable hobot-switch-aptsource.service
+# === X3_START ===
+update-rc.d usbsel defaults
+systemctl --no-reload enable usbsel.service
+# === X3_END ===
+# === X5_START ===
 systemctl --no-reload enable init_S98qos_config.service
 systemctl --no-reload enable hobot-suspend-button.service
-systemctl --no-reload enable hobot-switch-aptsource.service
 systemctl --no-reload enable hobot-system-config.service
-
+# === X5_END ===
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 if [ ! -f /etc/rc.local ]; then
@@ -68,9 +73,7 @@ fi
 EOF
 
 fi
-
-mv /lib/systemd/system/hobot-networking.service /lib/systemd/system/networking.service
-
+# === X5_START ===
 #Xorg use /usr/hobot/lib gc8000l library
 sed -i '/^export LD_LIBRARY_PATH=\/usr\/hobot\/lib:\$LD_LIBRARY_PATH$/d' /usr/bin/Xorg
 sed -i '/if \[ -e \/etc\/X11\/xorg\.conf\.d\/2-dr-accel\.conf \] ; then/,/fi/d' /usr/bin/Xorg
@@ -78,6 +81,7 @@ sed -i '/^basedir=\/usr\/lib\/xorg/i\
 if [ -e /etc/X11/xorg.conf.d/2-dr-accel.conf ] ; then\
 \n\texport LD_LIBRARY_PATH=/usr/hobot/lib:$LD_LIBRARY_PATH\
 \nfi' /usr/bin/Xorg
+# === X5_END ===
 
 cp -arf /etc/skel/.config /home/root
 cp -arf /etc/skel/.config /home/sunrise
