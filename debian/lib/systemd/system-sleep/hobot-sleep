@@ -1,0 +1,67 @@
+#!/bin/bash
+set -e
+
+LOCK_FILE="/tmp/hobot-sleep.lock"
+
+case "$1/$2" in
+  pre/suspend)
+    echo "挂起前执行" >> /tmp/sleep.log
+    if [ -e "$LOCK_FILE" ]; then
+      echo "Already running" >> /tmp/sleep.log
+      exit 0
+    fi
+    touch "$LOCK_FILE"
+
+    MODULES=("snd_soc_hobot_sound_duplex_host" "snd_soc_es8326" "aic8800_fdrv" "aic8800_bsp")
+    for MODULE in "${MODULES[@]}"; do
+      if lsmod | grep -q "$MODULE"; then
+        rmmod "$MODULE" || true
+        echo "$(date): rmmod $MODULE" > /dev/kmsg
+      fi
+    done
+
+    systemctl stop lightdm || true
+    ifconfig eth0 down || true
+    sleep 3
+    ;;
+
+  post/suspend)
+    echo "唤醒后执行" >> /tmp/sleep.log
+    ifconfig eth0 up || true
+
+    MODULES=("snd_soc_hobot_sound_duplex_host" "snd_soc_es8326" "aic8800_fdrv" "aic8800_bsp")
+    NUM_MODULES=${#MODULES[@]}
+    MAX_RETRIES=5
+    RETRY=0
+
+    while [ $RETRY -lt $MAX_RETRIES ]; do
+      all_loaded=true
+
+      for ((i=NUM_MODULES-1; i>=0; i--)); do
+        MODULE="${MODULES[$i]}"
+        if ! lsmod | grep -q "^$MODULE"; then
+          if modprobe "$MODULE"; then
+            echo "$(date): Loaded $MODULE" > /dev/kmsg
+          else
+            echo "$(date): Failed to load $MODULE" > /dev/kmsg
+            all_loaded=false
+          fi
+        fi
+      done
+
+      if $all_loaded; then
+        echo "$(date): All modules loaded successfully. Exiting loop." > /dev/kmsg
+        break
+      fi
+
+      RETRY=$((RETRY + 1))
+      echo "$(date): Retry $RETRY/$MAX_RETRIES" > /dev/kmsg
+      sleep 1
+    done
+
+    sleep 1
+    systemctl start lightdm || true
+    sleep 5
+    rm -f "$LOCK_FILE"
+    ;;
+esac
