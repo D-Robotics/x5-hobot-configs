@@ -57,15 +57,12 @@ start()
 
     if [ -n "$throttling_temp" ]; then
         echo "Setting DDR/CPU/BPU/GPU throttling temp to $throttling_temp..."
-        echo user_space > /sys/class/thermal/thermal_zone0/policy
         echo "$throttling_temp" > /sys/devices/virtual/thermal/thermal_zone0/trip_point_0_temp
-        echo user_space > /sys/class/thermal/thermal_zone1/policy
         echo "$throttling_temp" > /sys/devices/virtual/thermal/thermal_zone1/trip_point_1_temp
     fi
 
     if [ -n "$shutdown_temp" ]; then
         echo "Setting CPU/BPU/GPU shutdown temp to $shutdown_temp..."
-        echo user_space > /sys/class/thermal/thermal_zone1/policy
         echo "$shutdown_temp" > /sys/devices/virtual/thermal/thermal_zone1/trip_point_2_temp
     fi
 
