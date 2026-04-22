@@ -56,7 +56,12 @@ get_hardware_info() {
     if [[ "$board_type_string" == *x5* ]]; then
       hardware_info="${board_type_string} $(tr -d "\n\r\0" < /sys/class/socinfo/board_version) (Board Id = $(tr -d "\n\r\0" < /sys/class/socinfo/board_id))"
     else
-      hardware_info=$(tr -d "\n\r\0" < /proc/device-tree/model)" (Board Id = "$(tr -d "\n\r\0" < /sys/class/socinfo/som_name)")"
+      # X3: show sysfs board_id (same source as hrut_boardid), not som_name
+      if [ -f "${SYSFS_BOARDID_PATH}" ]; then
+        hardware_info=$(tr -d "\n\r\0" < /proc/device-tree/model)" (Board Id = $(tr -d "\n\r\0" < "${SYSFS_BOARDID_PATH}"))"
+      else
+        hardware_info=$(tr -d "\n\r\0" < /proc/device-tree/model)" (SOM = "$(tr -d "\n\r\0" < /sys/class/socinfo/som_name 2>/dev/null)")"
+      fi
     fi
     echo "[Hardware Model]:"
     echo -e "\t${hardware_info}\n"
