@@ -13,37 +13,36 @@ change_grp()
 {
 	local DIR="${1}"
 	local group_name="${2}"
+	find "$DIR" -depth \( -group root -o -group sudo \) \( -type f -o -type d \) \
+		 -exec chgrp "${group_name}" {} + 2>/dev/null || true
 
-	for file in $(find "$DIR" -depth)
-	do
-		if [ -d "$file" ] || [ -f "$file" ]; then
-			group=$(stat -c %G "$file")
-			if [ "$group" == "root" ] || [ "$group" == "sudo" ]; then
-				chgrp ${group_name} "$file"
-			fi
-		fi
-	done
 }
 
 mount_config()
 {
-	# Determine the mmc device number of the rootfs partition
-	local ROOT_PART="$(findmnt / -o source -n)"
-	local ROOT_DEV="/dev/$(lsblk -no pkname "$ROOT_PART")"
+    # If already mounted, simply skip this step
+    if mountpoint -q /boot/config 2>/dev/null; then
+        return 0
+    fi
 
-	# Find the config partition
-	local config_dev=$(blkid ${ROOT_DEV}* | grep 'LABEL="CONFIG"' | cut -d: -f1)
-	if [ -z "$config_dev" ]; then
-		echo "Error: could not find config partition with label CONFIG"
-		return 1
-	fi
+    local ROOT_PART="$(findmnt / -o source -n)"
+    local ROOT_DEV="/dev/$(lsblk -no pkname "$ROOT_PART" 2>/dev/null)"
+    local config_dev
 
-	# Mount the config partition to /boot/config
-	local config_mount="/boot/config"
-	mkdir -p $config_mount
-	mount $config_dev $config_mount
+    # Only scan the first partition (the CONFIG partition of RDK X5 is fixed as p1)
+    config_dev=$(blkid "${ROOT_DEV}p1" -o device -t LABEL="CONFIG" 2>/dev/null)
+    if [ -z "$config_dev" ]; then
+        config_dev=$(blkid -L CONFIG 2>/dev/null)
+    fi
+    if [ -z "$config_dev" ]; then
+        echo "Error: could not find config partition with label CONFIG"
+        return 1
+    fi
 
-	echo "Mounted config partition $config_dev to $config_mount"
+    local config_mount="/boot/config"
+    mkdir -p $config_mount
+    mount $config_dev $config_mount
+    echo "Mounted config partition $config_dev to $config_mount"
 }
 
 start()
