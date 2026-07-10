@@ -12,7 +12,7 @@ case "$1/$2" in
     fi
     touch "$LOCK_FILE"
 
-    MODULES=("snd_soc_hobot_sound_duplex_host" "snd_soc_es8326" "aic8800_fdrv" "aic8800_bsp")
+    MODULES=("aic8800_fdrv" "aic8800_bsp")
     for MODULE in "${MODULES[@]}"; do
       if lsmod | grep -q "$MODULE"; then
         rmmod "$MODULE" || true
@@ -29,7 +29,7 @@ case "$1/$2" in
     echo "唤醒后执行" >> /tmp/sleep.log
     ifconfig eth0 up || true
 
-    MODULES=("snd_soc_hobot_sound_duplex_host" "snd_soc_es8326" "aic8800_fdrv" "aic8800_bsp")
+    MODULES=("aic8800_fdrv" "aic8800_bsp")
     NUM_MODULES=${#MODULES[@]}
     MAX_RETRIES=5
     RETRY=0
