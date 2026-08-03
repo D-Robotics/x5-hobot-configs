@@ -1,5 +1,8 @@
 # restart adbd server if udc change uevent happen...
+# x3 (UDC: b2000000.dwc3)
 DEVPATH=="/devices/platform/soc/b2000000.usb/b2000000.dwc3/udc/b2000000.dwc3", ACTION=="add", RUN+="/usr/bin/adb_hotplug.sh"
+# x5 (UDC: 35300000.usb)
+DEVPATH=="/devices/platform/soc/35000000.hsio_apb/35300000.usb2/35300000.usb/udc/35300000.usb", ACTION=="add", RUN+="/usr/bin/adb_hotplug.sh"
 
 # <<< @This is deprecated udev rules >>>
 # this is temp solution for adbd hot plug issue.
