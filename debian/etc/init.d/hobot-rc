@@ -14,15 +14,7 @@ change_grp()
 	local DIR="${1}"
 	local group_name="${2}"
 
-	for file in $(find "$DIR" -depth)
-	do
-		if [ -d "$file" ] || [ -f "$file" ]; then
-			group=$(stat -c %G "$file")
-			if [ "$group" == "root" ] || [ "$group" == "sudo" ]; then
-				chgrp ${group_name} "$file"
-			fi
-		fi
-	done
+	find "$DIR" \( -type f -o -type d \) \( -group root -o -group sudo \) -exec chgrp "$group_name" {} +
 }
 
 mount_config()
