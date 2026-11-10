@@ -20,36 +20,6 @@ do_resize_rootfs()
     fi
 }
 
-do_resize_appfs()
-{
-    for num in {0..3}
-    do
-        local mmc_dev="/dev/mmcblk${num}"
-        if [ ! -z ${mmc_dev} ];then
-            local app_part=$(parted ${mmc_dev} print -sm | grep "app" |tail -1 | awk -F ':' '{print $1}')
-            if grep '^[[:digit:]]*$' <<< "${app_part}";then
-                break;
-            fi
-        fi
-    done
-    if ! grep '^[[:digit:]]*$' <<< "${app_part}";then
-        echo "No app partition found!"!
-        return 0
-    fi
-    local fs_type=$(lsblk -n -o FSTYPE "${mmc_dev}p${app_part}")
-    local usage=$(lsblk -n -o FSUSE% "${mmc_dev}p${app_part}")
-    usage=${usage%%%}
-    if [ ! -f /etc/.do_resizefs_app ];then
-        if [ x${fs_type} == x"ext4" ];then
-            if [ ${usage} -gt 90 ];then
-                echo "Start resize ${mmc_dev}p${app_part}"
-                resize2fs "${mmc_dev}p${app_part}"
-                touch /etc/.do_resizefs_app
-            fi
-        fi
-    fi
-}
-
 do_expand_partiton()
 {
 	if [ ! -f /etc/.do_expand_partiton ];then
@@ -72,8 +42,20 @@ do_expand_partiton()
         # Get the starting offset of the root partition
         local PART_START=$(parted "$ROOT_DEV" -ms unit s p | grep "^${PART_NUM}" | cut -f 2 -d: | sed 's/[^0-9]//g')
         [ "$PART_START" ] || return 1
-        # Return value will likely be error for fdisk as it fails to reload the
-        # partition table because the root fs is mounted
+
+        # If the root partition already fills the disk, there is nothing to do:
+        # mark it done so we do not retry expansion on every boot.
+        local DISK_END=$(parted "$ROOT_DEV" -ms unit s p | grep "^/dev" | head -1 | cut -f 2 -d: | sed 's/[^0-9]//g')
+        local PART_END=$(parted "$ROOT_DEV" -ms unit s p | grep "^${PART_NUM}" | cut -f 3 -d: | sed 's/[^0-9]//g')
+        if [ -n "$PART_END" ] && [ -n "$DISK_END" ] && [ "$PART_END" -ge "$((DISK_END - 1))" ]; then
+            touch /etc/.do_expand_partiton
+            return 0
+        fi
+
+        # Delete the root partition and recreate it ending at the disk end,
+        # keeping the same start sector so the filesystem data is preserved.
+        # fdisk prints a warning that it cannot reload the partition table on a
+        # mounted root fs, but it still writes the new table to disk.
         fdisk "$ROOT_DEV" <<EOF
 p
 d
@@ -86,9 +68,18 @@ $PART_START
 p
 w
 EOF
-        partprobe $rootdevicepath
+        # Reload the partition table so the kernel sees the new partition size.
+        partprobe "$ROOT_DEV"
         parted "${ROOT_DEV}" set ${PART_NUM} boot on
-        touch /etc/.do_expand_partiton
+        # Only mark expansion done if the partition actually grew; otherwise
+        # leave the marker unset so the next boot retries.
+        local PART_END_NEW=$(parted "$ROOT_DEV" -ms unit s p | grep "^${PART_NUM}" | cut -f 3 -d: | sed 's/[^0-9]//g')
+        if [ -n "$PART_END_NEW" ] && [ "$PART_END_NEW" -gt "$PART_END" ]; then
+            touch /etc/.do_expand_partiton
+        else
+            echo "Partition expansion failed (end sector ${PART_END} -> ${PART_END_NEW}), will retry next boot"
+            return 1
+        fi
     fi
 }
 
@@ -100,7 +91,6 @@ do_resize()
         do_expand_partiton
     fi
     do_resize_rootfs
-    do_resize_appfs
 }
 
 case "$1" in
