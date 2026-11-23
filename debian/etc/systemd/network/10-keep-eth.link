@@ -1,0 +1,7 @@
+# Keep the kernel-assigned ethernet interface name (eth0), disable
+# systemd-udev predictable renaming (which would rename it to end0).
+[Match]
+OriginalName=eth*
+
+[Link]
+NamePolicy=keep
